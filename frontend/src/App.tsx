@@ -11,6 +11,7 @@ import SignupPage from './pages/Signup';
 import LoginPage from './pages/Login';
 
 function App() {
+ 
   return (
     <Router>
       <div className="flex flex-col min-h-screen">

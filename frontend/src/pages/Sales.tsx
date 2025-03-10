@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Header from "../compnents/header";
+import axios from "axios";
 
 interface Product {
   id: number;
@@ -27,12 +28,35 @@ const SalesPage = () => {
 
   // Dummy Product List
   useEffect(() => {
-    setProducts([
+    const fetchStock = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/fetch_products", {
+          withCredentials: true,
+        });
+        console.log("Fetched stock:", response.data);
+        setProducts(response.data.map((p: any) => ({
+          ...p,
+          price: Number(p.price), // Convert to number
+        })));
+      } catch (error) {
+        console.error("Error fetching stock:", error);
+      }
+    };
+
+    fetchStock();
+
+    
+/*  setProducts([
       { id: 1, name: "Apple", category: "Fruits", price: 3.00, stock: 50, expiry_date: "2025-12-31", barcode: "1234567890" },
       { id: 2, name: "Milk", category: "Dairy", price: 2.80, stock: 30, expiry_date: "2024-09-15", barcode: "0987654321" },
       { id: 3, name: "Chicken", category: "Meat", price: 7.99, stock: 25, expiry_date: "2024-08-20", barcode: "5432109876" },
       { id: 4, name: "Rice", category: "Grains", price: 6.50, stock: 80, expiry_date: "2026-06-30", barcode: "6789012345" }
-    ]);
+    
+
+
+      
+    
+    ]);*/
   }, []);
 
   // Add Product to Cart
@@ -84,13 +108,7 @@ const SalesPage = () => {
       return;
     }
 
-    /* fetch("http://localhost:5000/sales", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cart),
-    })
-      .then((res) => res.json())
-      .then(() => { */
+  
         alert("Sales recorded successfully!");
         setCart([]);
       /* })
@@ -125,7 +143,7 @@ const SalesPage = () => {
             >
               <p className="text-lg font-semibold">{product.name}</p>
               <p className="text-gray-400">{product.category}</p>
-              <p className="text-gray-400">${product.price.toFixed(2)}</p>
+              <p className="text-gray-400">${product.price}</p>
               <p className="text-gray-400">Stock: {product.stock}</p>
             </button>
           ))}
