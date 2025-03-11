@@ -95,7 +95,7 @@ const SalesPage = () => {
       price: Number(p.price), // Convert to number
     })));
 
-     alert(products)
+    
     }
     
     catch(err) {
@@ -162,7 +162,7 @@ const SalesPage = () => {
               <tbody>
                 {cart.map((item) => (
                   <tr key={item.id} className="text-center bg-[#232323] hover:bg-[#2E2E2E] transition">
-                    <td className="p-3 border border-gray-700">{item.name}</td>
+                    <td className="p-3 border border-gray-700">{item.name}{item.product_id}</td>
                     <td className="p-3 border border-gray-700">{item.quantity}</td>
                     <td className="p-3 border border-gray-700">${item.total_price.toFixed(2)}</td>
                     <td className="p-3 border border-gray-700">

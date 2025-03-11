@@ -39,18 +39,21 @@ server.get("/fetch_products", (req, res) => __awaiter(void 0, void 0, void 0, fu
 }));
 server.post("/add_stock", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const products = req.body;
-        if (!Array.isArray(products) || products.length === 0) {
-            return res.status(400).json({ error: "Invalid or empty product list" });
+        const { name, quantity } = req.body; // Expecting an array of products
+        // Fetch product ID
+        const [rows] = yield db_1.connection.execute("SELECT id FROM products WHERE name = ?", [name]);
+        if (rows.length === 0) {
+            console.warn(`⚠️ Product not found: ${name}`);
+            res.status(500).json({ error: `⚠️ Product not found: ${name}` });
+            return; // Skip if product doesn't exist
         }
-        for (const product of products) {
-            const { id, no } = product;
-            // Update stock
-            yield db_1.connection.execute("UPDATE products SET stock = stock + ? WHERE id = ?", [no, id]);
-        }
-        const [updatedProduct] = yield db_1.connection.execute("SELECT * FROM products ");
-        res.status(200).json({ message: "Stock added successfully", stoke: updatedProduct });
+        const productId = rows[0].id;
+        // Update stock
+        yield db_1.connection.execute("UPDATE products SET stock = stock + ? WHERE id = ?", [quantity, productId]);
+        const [updatedProducts] = yield db_1.connection.execute("SELECT * FROM products");
+        res.status(200).json({ message: "Stock added successfully", stock: updatedProducts });
     }
+    // Fetch updated products
     catch (err) {
         console.error("❌ Add Stock Error:", err.toString());
         res.status(500).json({ error: err.toString() });
@@ -65,9 +68,10 @@ server.post("/remove_stock", (req, res) => __awaiter(void 0, void 0, void 0, fun
         }
         const remainingProducts = [];
         for (const product of products) {
-            const { id, quantity } = product;
+            const { product_id, quantity } = product;
+            console.log(`${product_id} +${quantity}`);
             // Fetch current stock
-            const [rows] = yield db_1.connection.execute("SELECT stock,price FROM products WHERE id = ?", [id]);
+            const [rows] = yield db_1.connection.execute("SELECT stock,price FROM products WHERE id = ?", [product_id]);
             if (rows.length === 0) {
                 remainingProducts.push(product); // Product not found
                 continue;
@@ -81,9 +85,9 @@ server.post("/remove_stock", (req, res) => __awaiter(void 0, void 0, void 0, fun
                 continue;
             }
             // Update stock
-            yield db_1.connection.execute("UPDATE products SET stock = ? WHERE id = ?", [newStock, id]);
+            yield db_1.connection.execute("UPDATE products SET stock = ? WHERE id = ?", [newStock, product_id]);
             // Insert into sales table (recording the sale)
-            yield db_1.connection.execute("INSERT INTO sales (product_id, quantity, total_price, sale_date) VALUES (?, ?, ?, NOW())", [id, quantity, price * quantity] // Total price = price * quantity
+            yield db_1.connection.execute("INSERT INTO sales (product_id, quantity, total_price, sale_date) VALUES (?, ?, ?, NOW())", [product_id, quantity, price * quantity] // Total price = price * quantity
             );
         }
         const [productList] = yield db_1.connection.execute("SELECT * FROM products");

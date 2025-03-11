@@ -107,7 +107,7 @@ const AdminPage = () => {
             <option value="admin">Admin</option>
             <option value="cashier">Cashier</option>
             <option value="manager">Manager</option>
-            <option value="supplier">Supplier</option>
+        
           </select>
           <button
             onClick={handleCreateUser}

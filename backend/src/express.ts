@@ -33,29 +33,38 @@ server.get("/fetch_products", async (req: Request, res: Response) => {
 
 server.post("/add_stock", async (req: Request, res: Response) => {
     try {
-        const products:product = req.body;
+        const  { name, quantity } = req.body; // Expecting an array of products
 
-        if (!Array.isArray(products) || products.length === 0) {
-            return res.status(400).json({ error: "Invalid or empty product list" });
-        }
+        
 
-        for (const product of products) {
-            const { id, no } = product;
+        
+
+            // Fetch product ID
+            const [rows]: any = await connection.execute("SELECT id FROM products WHERE name = ?", [name]);
+
+            if (rows.length === 0) {
+                console.warn(`⚠️ Product not found: ${name}`);
+                res.status(500).json({ error:`⚠️ Product not found: ${name}`  });
+
+                return // Skip if product doesn't exist
+            }
+
+            const productId = rows[0].id;
 
             // Update stock
-          await connection.execute("UPDATE products SET stock = stock + ? WHERE id = ?", [no, id]);
-         
-        }
-        const [updatedProduct] = await connection.execute(
-            "SELECT * FROM products "
-        );
+            await connection.execute("UPDATE products SET stock = stock + ? WHERE id = ?", [quantity,productId]);
+            const [updatedProducts]: any = await connection.execute("SELECT * FROM products");
 
-        res.status(200).json({ message: "Stock added successfully",stoke:updatedProduct });
-    } catch (err) {
+            res.status(200).json({ message: "Stock added successfully", stock: updatedProducts });
+        }
+
+        // Fetch updated products
+     
+    catch (err) {
         console.error("❌ Add Stock Error:", err.toString());
         res.status(500).json({ error: err.toString() });
-    }
-});
+    
+}});
 
 
 
@@ -85,10 +94,11 @@ server.post("/remove_stock", async (req: Request, res: Response) => {
           }[] =[];
 
         for (const product of products) {
-            const { id, quantity } = product;
+            const {  product_id, quantity } = product;
+            console.log(`${product_id} +${quantity}`);
 
             // Fetch current stock
-            const [rows]: any = await connection.execute("SELECT stock,price FROM products WHERE id = ?", [id]);
+            const [rows]: any = await connection.execute("SELECT stock,price FROM products WHERE id = ?", [product_id]);
             if (rows.length === 0) {
                 remainingProducts.push(product); // Product not found
                 continue;
@@ -105,11 +115,11 @@ server.post("/remove_stock", async (req: Request, res: Response) => {
             }
 
             // Update stock
-            await connection.execute("UPDATE products SET stock = ? WHERE id = ?", [newStock, id]);
+            await connection.execute("UPDATE products SET stock = ? WHERE id = ?", [newStock, product_id]);
              // Insert into sales table (recording the sale)
              await connection.execute(
                 "INSERT INTO sales (product_id, quantity, total_price, sale_date) VALUES (?, ?, ?, NOW())",
-                [id, quantity, price * quantity] // Total price = price * quantity
+                [product_id, quantity, price * quantity] // Total price = price * quantity
             );
             
         }

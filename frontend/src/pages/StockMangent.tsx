@@ -1,34 +1,69 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../compnents/header";
+import { backend_Url} from "../constants";
+import axios from "axios";
 
 const StockManagementPage = () => {
-  const [stock, setStock] = useState([
-    { id: 1, name: "Apples", category: "Fruits", quantity: 50, expiry_date: "2025-12-01", status: "Available" },
-    { id: 2, name: "Milk", category: "Dairy", quantity: 20, expiry_date: "2025-03-20", status: "Low Stock" },
-  ]);
+  const [stock, setStock] = useState([]);
+
+  useEffect(() => {
+    const fetchStock = async () => {
+      try {
+        const response = await axios.get(`${backend_Url}/fetch_products`, {
+          withCredentials: true,
+        });
+        console.log("Fetched stock:", response.data);
+        setStock(response.data.map((p: any) => ({
+          ...p,
+          price: Number(p.price), status:(p.stock<10)?"Low Stock":"Available" // Convert to number
+        })));
+      } catch (error) {
+        console.error("Error fetching stock:", error);
+      }
+    };
+
+    fetchStock();
+    
+
+  }, []);
+
 
   const [formData, setFormData] = useState({
     name: "",
     category: "",
-    quantity: "",
+  stock: "",
     expiry_date: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newStockItem = {
-      id: stock.length + 1,
-      ...formData,
-      quantity: parseInt(formData.quantity, 10),
-      status: parseInt(formData.quantity, 10) > 10 ? "Available" : "Low Stock",
-    };
-    setStock([...stock, newStockItem]);
-    setFormData({ name: "", category: "", quantity: "", expiry_date: "" });
+    
+  
+  
+    try {
+      const response = await axios.post(
+        `${backend_Url}/add_stock`,
+        { name: formData.name, quantity: parseInt(formData.stock, 10) },
+        { withCredentials: true }
+      );
+  
+      setStock(response.data.stock.map((p: any) => ({
+        ...p,
+        price: Number(p.price),
+        status: p.stock < 10 ? "Low Stock" : "Available"
+      })));
+    } catch (error) {
+      console.error("Error adding stock:", error);
+      alert("Failed to add stock!");
+    }
+  
+    setFormData({ name: "", category: "", stock: "", expiry_date: "" });
   };
+  
 
   return (
     <><Header/>
@@ -58,9 +93,9 @@ const StockManagementPage = () => {
           />
           <input
             type="number"
-            name="quantity"
+            name="stock"
             placeholder="Quantity"
-            value={formData.quantity}
+            value={formData.stoke}
             onChange={handleChange}
             className="bg-[#1A1A1A] text-white border border-gray-600 p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
             required
@@ -96,8 +131,8 @@ const StockManagementPage = () => {
                   <td className="p-3 border border-gray-700 text-center">{item.id}</td>
                   <td className="p-3 border border-gray-700 text-center">{item.name}</td>
                   <td className="p-3 border border-gray-700 text-center">{item.category}</td>
-                  <td className="p-3 border border-gray-700 text-center">{item.quantity}</td>
-                  <td className="p-3 border border-gray-700 text-center">{item.expiry_date}</td>
+                  <td className="p-3 border border-gray-700 text-center">{item.stock}</td>
+                  <td className="p-3 border border-gray-700 text-center">{Date(item.expiry_date).toString()}</td>
                   <td className={`p-3 border border-gray-700 text-center ${item.status === "Low Stock" ? "text-red-500" : "text-green-400"}`}>
                     {item.status}
                   </td>
