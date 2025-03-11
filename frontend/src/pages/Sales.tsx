@@ -1,16 +1,8 @@
 import { useState, useEffect } from "react";
 import Header from "../compnents/header";
 import axios from "axios";
+import { backend_Url, Product } from "../constants";
 
-interface Product {
-  id: number;
-  name: string;
-  category: string;
-  price: number;
-  stock: number;
-  expiry_date?: string;
-  barcode?: string;
-}
 
 interface Sale {
   id: number;
@@ -30,7 +22,7 @@ const SalesPage = () => {
   useEffect(() => {
     const fetchStock = async () => {
       try {
-        const response = await axios.get("http://localhost:8080/fetch_products", {
+        const response = await axios.get(`${backend_Url}/fetch_products`, {
           withCredentials: true,
         });
         console.log("Fetched stock:", response.data);
@@ -44,19 +36,8 @@ const SalesPage = () => {
     };
 
     fetchStock();
-
-    
-/*  setProducts([
-      { id: 1, name: "Apple", category: "Fruits", price: 3.00, stock: 50, expiry_date: "2025-12-31", barcode: "1234567890" },
-      { id: 2, name: "Milk", category: "Dairy", price: 2.80, stock: 30, expiry_date: "2024-09-15", barcode: "0987654321" },
-      { id: 3, name: "Chicken", category: "Meat", price: 7.99, stock: 25, expiry_date: "2024-08-20", barcode: "5432109876" },
-      { id: 4, name: "Rice", category: "Grains", price: 6.50, stock: 80, expiry_date: "2026-06-30", barcode: "6789012345" }
     
 
-
-      
-    
-    ]);*/
   }, []);
 
   // Add Product to Cart
@@ -102,11 +83,27 @@ const SalesPage = () => {
   };
 
   // Handle Checkout
-  const handleCheckout = () => {
+  const handleCheckout = async() => {
     if (!cashier) {
       alert("Please enter cashier name.");
       return;
     }
+    try{
+     const response =await axios.post(`${backend_Url}/remove_stock`,{cart},{withCredentials:true});
+     setProducts(response.data.stoke.map((p: any) => ({
+      ...p,
+      price: Number(p.price), // Convert to number
+    })));
+
+     alert(products)
+    }
+    
+    catch(err) {
+      console.error(err);
+
+    }
+
+    
 
   
         alert("Sales recorded successfully!");

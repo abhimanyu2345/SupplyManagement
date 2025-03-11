@@ -58,13 +58,14 @@ server.post("/add_stock", (req, res) => __awaiter(void 0, void 0, void 0, functi
 }));
 server.post("/remove_stock", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const products = req.body;
+        const products = req.body.cart;
+        console.log(products);
         if (!Array.isArray(products) || products.length === 0) {
             return res.status(400).json({ error: "Invalid or empty product list" });
         }
         const remainingProducts = [];
         for (const product of products) {
-            const { id, no } = product;
+            const { id, quantity } = product;
             // Fetch current stock
             const [rows] = yield db_1.connection.execute("SELECT stock,price FROM products WHERE id = ?", [id]);
             if (rows.length === 0) {
@@ -73,7 +74,7 @@ server.post("/remove_stock", (req, res) => __awaiter(void 0, void 0, void 0, fun
             }
             let currentStock = rows[0].stock;
             let price = rows[0].price;
-            let newStock = currentStock - no;
+            let newStock = currentStock - quantity;
             // If stock would go negative, add to remaining list
             if (newStock < 0) {
                 remainingProducts.push(product);
@@ -82,10 +83,10 @@ server.post("/remove_stock", (req, res) => __awaiter(void 0, void 0, void 0, fun
             // Update stock
             yield db_1.connection.execute("UPDATE products SET stock = ? WHERE id = ?", [newStock, id]);
             // Insert into sales table (recording the sale)
-            yield db_1.connection.execute("INSERT INTO sales (product_id, quantity, total_price, sale_date) VALUES (?, ?, ?, NOW())", [id, no, price * no] // Total price = price * quantity
+            yield db_1.connection.execute("INSERT INTO sales (product_id, quantity, total_price, sale_date) VALUES (?, ?, ?, NOW())", [id, quantity, price * quantity] // Total price = price * quantity
             );
         }
-        const productList = yield db_1.connection.execute("SELECT * FROM products");
+        const [productList] = yield db_1.connection.execute("SELECT * FROM products");
         res.status(200).json({
             message: "Stock updated successfully",
             stoke: productList

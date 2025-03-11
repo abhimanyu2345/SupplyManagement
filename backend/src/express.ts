@@ -47,7 +47,7 @@ server.post("/add_stock", async (req: Request, res: Response) => {
          
         }
         const [updatedProduct] = await connection.execute(
-            "SELECT * FROM products WHERE id"
+            "SELECT * FROM products "
         );
 
         res.status(200).json({ message: "Stock added successfully",stoke:updatedProduct });
@@ -62,16 +62,30 @@ server.post("/add_stock", async (req: Request, res: Response) => {
 
 server.post("/remove_stock", async (req: Request, res: Response) => {
     try {
-        const products:product= req.body;
-
+        const products: {
+            id: number;
+            product_id: number;
+            name: string;
+            quantity: number;
+            total_price: number;
+            cashier: string;
+          }[]= req.body.cart;
+        console.log(products)
         if (!Array.isArray(products) || products.length === 0) {
             return res.status(400).json({ error: "Invalid or empty product list" });
         }
 
-        const remainingProducts: { id: number; no: number }[] = [];
+        const remainingProducts: {
+            id: number;
+            product_id: number;
+            name: string;
+            quantity: number;
+            total_price: number;
+            cashier: string;
+          }[] =[];
 
         for (const product of products) {
-            const { id, no } = product;
+            const { id, quantity } = product;
 
             // Fetch current stock
             const [rows]: any = await connection.execute("SELECT stock,price FROM products WHERE id = ?", [id]);
@@ -82,7 +96,7 @@ server.post("/remove_stock", async (req: Request, res: Response) => {
 
             let currentStock = rows[0].stock;
             let price = rows[0].price;
-            let newStock = currentStock - no;
+            let newStock = currentStock - quantity;
 
             // If stock would go negative, add to remaining list
             if (newStock < 0) {
@@ -95,11 +109,11 @@ server.post("/remove_stock", async (req: Request, res: Response) => {
              // Insert into sales table (recording the sale)
              await connection.execute(
                 "INSERT INTO sales (product_id, quantity, total_price, sale_date) VALUES (?, ?, ?, NOW())",
-                [id, no, price * no] // Total price = price * quantity
+                [id, quantity, price * quantity] // Total price = price * quantity
             );
             
         }
-        const productList = await connection.execute("SELECT * FROM products");
+        const [productList] = await connection.execute("SELECT * FROM products");
 
 
         res.status(200).json({ 
