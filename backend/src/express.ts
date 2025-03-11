@@ -128,6 +128,64 @@ server.post("/remove_stock", async (req: Request, res: Response) => {
 
 
 
+//logic for admin
+server.get("/fetch_users", async (req: Request, res: Response) => {
+    try {
+        const [users] = await connection.execute("SELECT * FROM users");
+        console.log("📦 users:", users);
+        res.status(200).json(users);
+    } catch (err) {
+        console.error("❌ Error:", err.toString());
+        res.status(500).json({ error: err.toString() });
+    }
+});
+
+server.post("/add_user", async (req: Request, res: Response) => {
+    const { username, password, role } = req.body;
+
+    if (!username || !password || !role) {
+        return res.status(400).json({ error: "All fields are required" });
+    }
+
+    try {
+        // Insert new user (hash password before storing)
+        await connection.execute(
+            "INSERT INTO users (username, password, role) VALUES (?, SHA2(?, 256), ?)",
+            [username, password, role]
+        );
+
+        // Fetch updated users list
+        const [users] = await connection.execute("SELECT * FROM users");
+        console.log("✅ User added:", username);
+        res.status(201).json(users);
+    } catch (err) {
+        console.error("❌ Error adding user:", err.toString());
+        res.status(500).json({ error: err.toString() });
+    }
+});
+
+
+server.delete("/remove_user/:id", async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+        // Delete user by ID
+        const [result] = await connection.execute("DELETE FROM users WHERE id = ?", [id]);
+
+        if ((result as any).affectedRows === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Fetch updated users list
+        const [users] = await connection.execute("SELECT * FROM users");
+        console.log("🗑️ User removed:", id);
+        res.status(200).json(users);
+    } catch (err) {
+        console.error("❌ Error removing user:", err.toString());
+        res.status(500).json({ error: err.toString() });
+    }
+});
+
 
  const startExpress=()=>{
     server.listen(8080,()=>{

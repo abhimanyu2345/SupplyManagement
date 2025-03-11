@@ -48,7 +48,7 @@ server.post("/add_stock", (req, res) => __awaiter(void 0, void 0, void 0, functi
             // Update stock
             yield db_1.connection.execute("UPDATE products SET stock = stock + ? WHERE id = ?", [no, id]);
         }
-        const [updatedProduct] = yield db_1.connection.execute("SELECT * FROM products WHERE id");
+        const [updatedProduct] = yield db_1.connection.execute("SELECT * FROM products ");
         res.status(200).json({ message: "Stock added successfully", stoke: updatedProduct });
     }
     catch (err) {
@@ -94,6 +94,54 @@ server.post("/remove_stock", (req, res) => __awaiter(void 0, void 0, void 0, fun
     }
     catch (err) {
         console.error("❌ Remove Stock Error:", err.toString());
+        res.status(500).json({ error: err.toString() });
+    }
+}));
+//logic for admin
+server.get("/fetch_users", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const [users] = yield db_1.connection.execute("SELECT * FROM users");
+        console.log("📦 users:", users);
+        res.status(200).json(users);
+    }
+    catch (err) {
+        console.error("❌ Error:", err.toString());
+        res.status(500).json({ error: err.toString() });
+    }
+}));
+server.post("/add_user", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { username, password, role } = req.body;
+    if (!username || !password || !role) {
+        return res.status(400).json({ error: "All fields are required" });
+    }
+    try {
+        // Insert new user (hash password before storing)
+        yield db_1.connection.execute("INSERT INTO users (username, password, role) VALUES (?, SHA2(?, 256), ?)", [username, password, role]);
+        // Fetch updated users list
+        const [users] = yield db_1.connection.execute("SELECT * FROM users");
+        console.log("✅ User added:", username);
+        res.status(201).json(users);
+    }
+    catch (err) {
+        console.error("❌ Error adding user:", err.toString());
+        res.status(500).json({ error: err.toString() });
+    }
+}));
+server.delete("/remove_user/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    try {
+        // Delete user by ID
+        const [result] = yield db_1.connection.execute("DELETE FROM users WHERE id = ?", [id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        // Fetch updated users list
+        const [users] = yield db_1.connection.execute("SELECT * FROM users");
+        console.log("🗑️ User removed:", id);
+        res.status(200).json(users);
+    }
+    catch (err) {
+        console.error("❌ Error removing user:", err.toString());
         res.status(500).json({ error: err.toString() });
     }
 }));

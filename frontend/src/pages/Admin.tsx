@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import Header from "../compnents/header";
+import { backend_Url } from "../constants";
+import axios from "axios";
 
 interface User {
   id: number;
@@ -16,38 +18,61 @@ const AdminPage = () => {
 
   // Dummy Users
   useEffect(() => {
-    setUsers([
-      { id: 1, username: "admin1", role: "admin", created_at: "2024-03-09 10:00:00" },
-      { id: 2, username: "cashier1", role: "cashier", created_at: "2024-03-08 12:30:00" },
-      { id: 3, username: "manager1", role: "manager", created_at: "2024-03-07 14:15:00" },
-      { id: 4, username: "supplier1", role: "supplier", created_at: "2024-03-06 16:45:00" }
-    ]);
+   
+   const fetchUser=async()=>{
+    try{
+      const response= await axios.get(`${backend_Url}/fetch_users`,{withCredentials:true});
+      console.log("users fetched successfully",response.data);
+      setUsers(response.data);
+    }
+
+   
+   catch(error) {
+     console.error(error);
+  }
+   
+   
+   
+}
+ fetchUser();
+   
   }, []);
 
   // Handle User Creation
-  const handleCreateUser = () => {
+  const handleCreateUser = async() => {
     if (!username || !password) {
       alert("Username and Password are required.");
+
       return;
     }
 
-    const newUser: User = {
-      id: users.length + 1,
-      username,
-      role,
-      created_at: new Date().toISOString().split("T")[0] + " " + new Date().toLocaleTimeString(),
-    };
+   try{
+    const response = await axios.post(`${backend_Url}/add_user`,{username,password,role},{withCredentials:true});
+    setUsers(response.data);
+   
+   }
+   catch(error) {
+    confirm(error);
+   }
 
-    setUsers([...users, newUser]);
-    setUsername("");
-    setPassword("");
-    setRole("cashier");
 
     alert("User created successfully!");
   };
-  const handleDeleteUser = (id: number) => {
+  const handleDeleteUser =async (id: number) => {
     if (confirm("Are you sure you want to delete this user?")) {
+      try{
+        
+        const response = await axios.delete(`${backend_Url}/remove_user/${id}`,{withCredentials:true});
+    setUsers(response.data);
+
+
+      }
+      catch(error){
+        console.error(error);
+      }
+
       setUsers(users.filter(user => user.id !== id));
+      
     }
   };
 
