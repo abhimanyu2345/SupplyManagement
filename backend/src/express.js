@@ -79,6 +79,8 @@ server.post("/remove_stock", (req, res) => __awaiter(void 0, void 0, void 0, fun
             let currentStock = rows[0].stock;
             let price = rows[0].price;
             let newStock = currentStock - quantity;
+            console.log(currentStock);
+            console.log(newStock);
             // If stock would go negative, add to remaining list
             if (newStock < 0) {
                 remainingProducts.push(product);
@@ -147,6 +149,53 @@ server.delete("/remove_user/:id", (req, res) => __awaiter(void 0, void 0, void 0
     catch (err) {
         console.error("❌ Error removing user:", err.toString());
         res.status(500).json({ error: err.toString() });
+    }
+}));
+server.get("/fetch_suppliers", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const [result] = yield db_1.connection.query("SELECT * FROM suppliers");
+        res.json(result);
+    }
+    catch (error) {
+        console.error("Error fetching suppliers:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+}));
+// ✅ Remove a supplier by ID
+// Remove a supplier by ID
+server.delete("/remove_supplier/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    try {
+        const [result] = yield db_1.connection.query("DELETE FROM suppliers WHERE id = ?", [id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Supplier not found" });
+        }
+        res.json({ message: "Supplier removed successfully", id });
+    }
+    catch (err) {
+        console.error("Error removing supplier:", err);
+        res.status(500).json({ error: "Database error" });
+    }
+}));
+server.post("/add_supplier", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name, contact, email, address } = req.body;
+    if (!name || !contact || !email || !address) {
+        return res.status(400).json({ error: "All fields are required" });
+    }
+    try {
+        const [result] = yield db_1.connection.query("INSERT INTO suppliers (name, contact, email, address) VALUES (?, ?, ?, ?)", [name, contact, email, address]);
+        const newSupplier = {
+            id: result.insertId, // MySQL returns the last inserted ID
+            name,
+            contact,
+            email,
+            address,
+        };
+        res.status(201).json({ message: "Supplier added successfully", supplier: newSupplier });
+    }
+    catch (err) {
+        console.error("Error adding supplier:", err);
+        res.status(500).json({ error: "Database error" });
     }
 }));
 const startExpress = () => {
